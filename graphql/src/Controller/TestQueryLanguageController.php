@@ -2,76 +2,83 @@
 
 namespace App\Controller;
 
-use Exception;
-use GraphQL\Error\Error;
-use GraphQL\Error\SyntaxError;
 use GraphQL\GraphQL;
-use GraphQL\Utils\BuildSchema;
-use ReflectionException;
-use RuntimeException;
+use GraphQL\Type\Definition\ObjectType;
+use GraphQL\Type\Definition\Type;
+use GraphQL\Type\Schema;
+use GraphQL\Type\SchemaConfig;
+
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Throwable;
 
-#[Route('/')]
+#[Route('/', methods: ["POST"])]
 class TestQueryLanguageController
 {
-    public function __construct()
-    {
+    public function __construct() {}
 
-    }
-
-    /**
-     * @throws SyntaxError
-     * @throws ReflectionException
-     * @throws Error
-     * @throws Exception
-     */
     public function __invoke(Request $request): Response
     {
-        $source = <<<SCHEMA
-type Query {
-    echo(message: String!): String! 
-}
-
-type Mutation {
-    sum(x: Int!, y: Int!): Int!
-}
-SCHEMA;
-
         try {
-            $schema = BuildSchema::build($source);
-            $rootValue = [
-                'echo' => static fn (array $rootValue, array $args): string => $rootValue['prefix'] . $args['message'],
-                'sum' => static fn (array $rootValue, array $args): int => $args['x'] + $args['y'],
-                'prefix' => 'You said: ',
-            ];
+            $queryType = new ObjectType([
+                'name' => 'myData',
+                'fields' => [
+                    // '__typename' => Type::string(),
+                    'hello' => [
+                        'type' => Type::string(),
+                        'resolve' => fn () => 'Hello World!',
+                    ],
+                    'hero' => [
+                        'type' => Type::string(),
+                        'args' => [
+                            'episode' => [
+                                'type' => Type::string(),
+                            ],
+                        ],
+                        'resolve' => fn ($rootValue, array $args): string => $this->getHero($args['episode'] ?? null),
+                    ]
+                ]
+            ]);
 
-            $rawInput = $request->getContent();
+            $schema = new Schema((new SchemaConfig())->setQuery($queryType));
 
-            /*
             $rawInput = file_get_contents('php://input');
+
+            //var_dump($rawInput);
+            //die;
+
+            //var_dump($rawInput);
+            //die;
+
             if ($rawInput === false) {
-                throw new RuntimeException('Failed to get php://input');
+                throw new \RuntimeException('Failed to get php://input');
             }
-            */
 
             $input = json_decode($rawInput, true);
-            $query = $input['request'];
+
+            $query = $input['query'];
+
             $variableValues = $input['variables'] ?? null;
 
+            $rootValue = ['prefix' => 'I say: '];
             $result = GraphQL::executeQuery($schema, $query, $rootValue, null, $variableValues);
         } catch (Throwable $e) {
-            $result = [
+            $output = [
                 'error' => [
                     'message' => $e->getMessage(),
                 ],
             ];
         }
 
+        // curl --data '{"query": "query { hello, hero(episode: \"TEST\") }" }' --header "Content-Type: application/json" http://localhost:1234/index.php/test-2
 
         return new JsonResponse($result->toArray());
+    }
+
+    public function getHero(string $hero): string
+    {
+        return "this is hero: $hero";
     }
 }

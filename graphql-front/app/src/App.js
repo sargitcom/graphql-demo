@@ -1,46 +1,53 @@
 import React, {useEffect, useState} from 'react';
-import {gql, useLazyQuery} from "@apollo/client";
+import {gql, useLazyQuery, useQuery} from "@apollo/client";
+import axios from "axios";
 
 function App() {
   const [x, setX] = useState();
   const [y, setY] = useState();
 
-  const query = gql`{
-      mutation sum(x, y): Integer
-  }`;
+  const [message, setMessage] = useState('Guess what? Click the button');
 
-  /*
-  query GetPetPhoto($choice: String!) {
-    pet(choice: $choice) {
-      id
-      imageURL
+  const query = gql(`
+    query myData($episode: String) {
+      hello
+      hero(episode: $episode) 
     }
-  }
-  */
+  `);
 
-  const [callQuery, { data, loading, error }] = useLazyQuery(query);
+  const [get, { loading, error, data }]  = useLazyQuery(query);
 
   const sumHandler = () => {
-
-    callQuery({variables: {x, y}});
-
+    get({variables: {"episode": "testing..."}}).then(data => console.log(data.data)); //
   }
 
-  useEffect(
-() => {
-        console.log(data);
-      },
-[loading]
-  );
-
-  if (loading) return "Loading...";
-  if (error) return <pre>{error.message}</pre>
-
   return <>
-    <input type={"text"} name={"x"} value={x} onChange={event => setX(event.target.value)} />
-    <input type={"text"} name={"y"} value={y} onChange={event => setY(event.target.value)} />
-    <button onClick={sumHandler}>SUM</button>
+    <p>Check console!!!</p>
+    <button onClick={sumHandler}>Click me!</button>
   </>;
 }
 
 export default App;
+
+/* TRY TO DO QUERY using AXIOS
+let axiosConfig = {
+  headers: {
+    'Content-Type': 'application/json;charset=UTF-8',
+  }
+};
+
+axios.post(
+'http://localhost:1234',
+{"query": "query myData($test: String) { hello hero(episode: $test)}" },
+axiosConfig
+)
+.then((res) => {
+  console.log('it`s working');
+  console.log(res);
+
+  setMessage(res.data.data.echo);
+})
+.catch((err) => {
+  console.log("AXIOS ERROR: ", err);
+})
+*/
