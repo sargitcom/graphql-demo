@@ -1,0 +1,5 @@
+./graphql/vendor
+./graphql/var/*
+./graphql/composer.phar
+./graphql-front/app/node_modules
+

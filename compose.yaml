@@ -1,0 +1,20 @@
+version: "3"
+services:
+
+  graphql-php-apache:
+    build:
+      context: .
+      dockerfile: ./docker/php/Dockerfile
+    ports:
+      - "1234:80"
+    volumes:
+      - ./graphql:/var/www/html
+
+  graphql-node:
+    build:
+      context: .
+      dockerfile: ./docker/node/Dockerfile
+    ports:
+      - "12345:3000"
+    volumes:
+      - ./graphql-front/app:/app
